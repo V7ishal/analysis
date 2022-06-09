@@ -1,0 +1,80 @@
+---
+version: "3.9"
+services:
+  # MongoDB Replica Set
+  # Primary
+  mongo1:
+    image: mongo:4.0-xenial
+    container_name: mongo1
+    # command: mongod --keyFile /data/mongodb.key --replSet ananlysis-engline-rs --journal --bind_ip_all
+    command: mongod --replSet ananlysis-engline-rs --journal --bind_ip_all
+    volumes:
+      # - "./mongodb.key:/data/mongodb.key"
+      - "./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro"
+      - rs1:/data/db
+    ports:
+      - "27017:27017"
+    links:
+      - mongo2:mongo2
+      - mongo3:mongo3
+    healthcheck:
+     test: test $$(echo "rs.initiate({_id:'ananlysis-engline-rs',members:[{_id:0,host:\"mongo1:27017\",priority:3},{_id:1,host:\"mongo2:27017\",priority:2},{_id:2,host:\"mongo3:27017\",priority:1}]}).ok || rs.status().ok" | mongo --port 27017 --quiet) -eq 1
+     interval: 10s
+     start_period: 30s
+    restart: always
+    networks:
+      - test-network 
+
+  # Secondary replica set
+  mongo2:
+    image: mongo:4.0-xenial
+    container_name: mongo2
+    command: mongod --replSet ananlysis-engline-rs --journal --bind_ip_all
+    volumes:
+      # - "./mongodb.key:/data/mongodb.key"
+      - rs2:/data/db
+    ports:
+      - "27018:27017"
+    restart: always
+    networks: 
+      - test-network
+
+  mongo3:
+    image: mongo:4.0-xenial
+    container_name: mongo3
+    command: mongod --replSet ananlysis-engline-rs --journal --bind_ip_all
+    volumes:
+      # - "./mongodb.key:/data/mongodb.key"
+      - rs3:/data/db
+    ports:
+      - "27019:27017"
+    restart: always
+    networks:
+      - test-network
+
+  analysis-engine:
+    build: .
+    image: analysis-engine
+    ports:
+      - "8001:8000"
+    expose:
+      - "8001"
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks: 
+      - test-network
+
+volumes:
+  rs1:
+  rs2:
+  rs3:
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+     config:
+        - subnet: 192.168.102.1/28
+

@@ -1,0 +1,39 @@
+version: '2.1'
+
+services:
+
+  globalstore-mongo:
+    image: mongo:4.0-xenial
+    container_name: globalstore-mongo
+    hostname: globalstore-mongo
+    volumes:
+      - mongo-data:/data
+    ports:
+      - "27020:27017"
+    networks: 
+      - test-network
+
+  globalstore-mysql:
+    image: mysql
+    container_name: globalstore-mysql
+    hostname: globalstore-mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - TZ=Asia/Kolkata
+    ports:
+      - "3307:3306"
+    networks:
+      - test-network
+
+volumes:
+  mongo-data:
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+     config:
+        - subnet: 192.168.102.1/28
+    

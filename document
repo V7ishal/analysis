@@ -1,0 +1,6 @@
+sudo docker exec -it 5198da3694b3 mongo
+sudo docker compose up -d
+sudo docker exec -it 0fb9dd7849d3 mongo
+sudo docker logs 6dc95bc08110
+
+
